@@ -178,6 +178,9 @@ async function testUrls(urls, document, configFile, filePath) {
     // Clear previous diagnostics to remove old highlights
     diagnosticCollection.clear(document.uri);
 
+    // Show a loading message
+    const loadingMessage = vscode.window.showInformationMessage('Checking URLs... Please wait.', { modal: false });
+
     // Function to process URLs with concurrency control
     const processUrl = async (url) => {
         const cleanedUrl = cleanUrl(url);  // Clean the URL to remove any metadata (like "icon")
@@ -262,14 +265,22 @@ async function testUrls(urls, document, configFile, filePath) {
         await Promise.all(promises);
     };
 
-    await processUrlsWithConcurrency(urls, CONCURRENCY_LIMIT);
+    try {
+        await processUrlsWithConcurrency(urls, CONCURRENCY_LIMIT);
+    } finally {
+        // Dismiss the loading message
+        loadingMessage.then(() => {
+            // Loading message will automatically disappear after a few seconds
+        });
 
-    // Report all diagnostics at once
-    if (diagnostics.length > 0) {
-        diagnosticCollection.set(document.uri, diagnostics);
+        // Report all diagnostics at once
+        if (diagnostics.length > 0) {
+            diagnosticCollection.set(document.uri, diagnostics);
+        }
+
+        // Show the final result message
+        vscode.window.showInformationMessage(`Checked ${urls.length} URLs, found ${brokenUrls.length} broken and ${workingUrls.length} working.`);
     }
-
-    vscode.window.showInformationMessage(`Checked ${urls.length} URLs, found ${brokenUrls.length} broken and ${workingUrls.length} working.`);
 }
 
 async function createBrokenUrlDiagnostic(url, document, message, fullurl) {
