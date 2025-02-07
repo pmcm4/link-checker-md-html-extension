@@ -13,9 +13,9 @@ function activate(context) {
     console.log('URL Checker extension is now active!');
 
     // Create a diagnostic collection for reporting problems
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('link-checker');
+    diagnosticCollection = vscode.languages.createDiagnosticCollection('link-checker-md-html-tc');
 
-    let disposable = vscode.commands.registerCommand('link-checker.checkUrls', async () => {
+    let disposable = vscode.commands.registerCommand('link-checker-md-html-tc.checkUrls', async () => {
         const editor = vscode.window.activeTextEditor;
 
         if (!editor) {
