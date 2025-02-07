@@ -1,9 +1,8 @@
 {
-  "name": "link-checker-md-html-tc",
-  "displayName": "Link checker for Markdown and HTML - TC ONLY",
+  "name": "link-checker",
+  "displayName": "Link checker",
   "description": "",
   "version": "0.0.1",
-  "publisher": "pmcm-dev",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -15,7 +14,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "link-checker-md-html-tc.checkUrls",
+        "command": "link-checker.checkUrls",
         "title": "Check URLs"
       }
     ]
