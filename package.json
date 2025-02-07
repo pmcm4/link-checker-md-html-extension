@@ -1,8 +1,8 @@
 {
-  "name": "link-checker",
-  "displayName": "Link checker",
+  "name": "link-checker-mkdown-html-lint",
+  "displayName": "Link checker - HTML & Markdown",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -14,7 +14,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "link-checker.checkUrls",
+        "command": "link-checker-mkdown-html-lint.checkUrls",
         "title": "Check URLs"
       }
     ]
