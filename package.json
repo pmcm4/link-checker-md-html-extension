@@ -2,7 +2,7 @@
   "name": "link-checker-md-html-linter",
   "displayName": "Link checker - HTML & Markdown",
   "description": "",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "pmcm-dev",
   "engines": {
     "vscode": "^1.96.0"
@@ -38,6 +38,5 @@
     "cheerio": "^1.0.0",
     "node-fetch": "^3.3.2",
     "toml": "^3.0.0"
-  },
-  "type": "commonjs"
+  }
 }
