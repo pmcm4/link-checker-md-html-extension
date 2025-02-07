@@ -37,5 +37,6 @@
     "cheerio": "^1.0.0",
     "node-fetch": "^3.3.2",
     "toml": "^3.0.0"
-  }
+  },
+  "type": "commonjs"
 }
