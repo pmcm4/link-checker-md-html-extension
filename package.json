@@ -2,7 +2,7 @@
   "name": "link-checker-md-html-tc",
   "displayName": "Link checker for Markdown and HTML - TC ONLY",
   "description": "",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "publisher": "pmcm-dev",
   "engines": {
     "vscode": "^1.96.0"
@@ -37,7 +37,6 @@
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
     "node-fetch": "^3.3.2",
-    "p-limit": "^6.2.0",
     "toml": "^3.0.0"
   }
 }
