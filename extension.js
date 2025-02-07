@@ -11,7 +11,6 @@ let diagnosticCollection;
 function activate(context) {
     console.log('URL Checker extension is now active!');
 
-    // Create a diagnostic collection for reporting problems
     diagnosticCollection = vscode.languages.createDiagnosticCollection('link-checker-md-html-linter');
 
     let disposable = vscode.commands.registerCommand('link-checker-md-html-linter.checkUrls', async () => {
@@ -24,7 +23,6 @@ function activate(context) {
 
         const document = editor.document;
 
-        // Check if the file is HTML or Markdown
         if (document.languageId !== 'html' && document.languageId !== 'markdown') {
             vscode.window.showErrorMessage('This extension only works with HTML and Markdown files.');
             return;
@@ -33,14 +31,12 @@ function activate(context) {
         const text = document.getText();
 
         console.time('URL Extraction');
-        // Regex to capture HTML and Markdown links
-        const urlRegex = /(?:href|src|action|data|poster|cite|profile|background|ping|formaction)\s*=\s*["']([^"']+)["']/g; // HTML
-        const markdownRegex = /\[([^\]]+)\]\(([^)]+)\)/g; // Markdown
+        const urlRegex = /(?:href|src|action|data|poster|cite|profile|background|ping|formaction)\s*=\s*["']([^"']+)["']/g;
+        const markdownRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
 
         const htmlUrls = Array.from(text.matchAll(urlRegex), match => match[1]);
         const markdownUrls = Array.from(text.matchAll(markdownRegex), match => match[2]);
 
-        // Combine both HTML and markdown URLs
         const urls = [...htmlUrls, ...markdownUrls];
 
         console.timeEnd('URL Extraction');
@@ -57,7 +53,16 @@ function activate(context) {
         }
 
         console.time('Test URLs');
-        await testUrls(urls, document, configFile, filePath);
+
+        // Show loading message while processing URLs
+        const loadingMessage = vscode.window.setStatusBarMessage('Checking URLs, please wait...');
+        
+        try {
+            await testUrls(urls, document, configFile, filePath);
+        } finally {
+            loadingMessage.dispose(); // Remove loading message when done
+        }
+
         console.timeEnd('Test URLs');
     });
 
