@@ -2,7 +2,7 @@
   "name": "link-checker-md-html-linter",
   "displayName": "Link checker - HTML & Markdown",
   "description": "",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "pmcm-dev",
   "homepage": "https://github.com/pmcm4/link-checker-md-html-extension/blob/main/README.md",
   "engines": {
