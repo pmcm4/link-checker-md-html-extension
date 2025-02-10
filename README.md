@@ -22,3 +22,11 @@ This extension is intended for internal use within TechComms and is not meant fo
 2. Navigate to the Extensions view (Ctrl+Shift+X).
 3. Search for `Link checker - HTML & Markdown`.
 4. Click `Install`.
+
+## Usage
+
+1. Open a Markdown or HTML file in VSCode.
+2. Use the command palette (`Ctrl+Shift+P`) and search for `Check URLs`.
+3. The extension will start checking the URLs in the file.
+4. Working URLs will be marked with a green check, and broken URLs will be marked with a red "X".
+5. View URL validation results in the `Problems` tab.
