@@ -28,5 +28,6 @@ This extension is intended for internal use within TechComms and is not meant fo
 1. Open a Markdown or HTML file in VSCode.
 2. Use the command palette (`Ctrl+Shift+P`) and search for `Check URLs`.
 3. The extension will start checking the URLs in the file.
-4. Working URLs will be marked with a green check, and broken URLs will be marked with a red "X".
-5. View URL validation results in the `Problems` tab.
+4. URLs will be highlighted with a blue curly line if the URL is working, and red if the URL is broken.
+5. You can also view URL validation results in the `Problems` tab.
+6. Working URLs will be marked with a green check, and broken URLs will be marked with a red "X".
