@@ -8,7 +8,7 @@
     "vscode": "^1.96.0"
   },
   "categories": [
-    "Other"
+    "Linters", "Other"
   ],
   "activationEvents": [],
   "main": "./extension.js",
