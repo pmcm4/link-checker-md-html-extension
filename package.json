@@ -4,6 +4,7 @@
   "description": "",
   "version": "0.0.4",
   "publisher": "pmcm-dev",
+  "homepage": "https://github.com/pmcm4/link-checker-md-html-extension/blob/main/README.md",
   "engines": {
     "vscode": "^1.96.0"
   },
