@@ -162,10 +162,19 @@ function cleanUrl(url) {
     // Regular expression to match the URL and ignore anything after the first quote
     const urlRegex = /^([^\s]+)(?:\s+"[^"]*")?$/;
     const match = url.match(urlRegex);
-    return match ? match[1] : url;  // Return the cleaned URL
+    return match ? match[1] : url; // Return the cleaned URL
 }
 
 async function testUrls(urls, document, configFile, filePath) {
+
+    // Clear previous diagnostics to remove old highlights
+    diagnosticCollection.clear(document.uri);
+
+    // Show a loading message
+    const loadingMessage = vscode.window.showInformationMessage('Checking URLs... Please wait.', {
+        modal: false
+    });
+
     const workingUrls = [];
     const brokenUrls = [];
 
@@ -175,20 +184,16 @@ async function testUrls(urls, document, configFile, filePath) {
     // Retrieve the base URL (absURL) based on the config and file path
     const absURL = await findAbsURL(configFile, filePath);
 
-    // Clear previous diagnostics to remove old highlights
-    diagnosticCollection.clear(document.uri);
-
-    // Show a loading message
-    const loadingMessage = vscode.window.showInformationMessage('Checking URLs... Please wait.', { modal: false });
-
     // Function to process URLs with concurrency control
     const processUrl = async (url) => {
-        const cleanedUrl = cleanUrl(url);  // Clean the URL to remove any metadata (like "icon")
+        const cleanedUrl = cleanUrl(url); // Clean the URL to remove any metadata (like "icon")
 
         try {
             // Check if it's an external URL (starts with http:// or https://)
             if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
-                const response = await axios.head(cleanedUrl, { validateStatus: null });
+                const response = await axios.head(cleanedUrl, {
+                    validateStatus: null
+                });
 
                 if (response.status === 404 || response.status === 403) {
                     brokenUrls.push(url);
@@ -205,7 +210,9 @@ async function testUrls(urls, document, configFile, filePath) {
             else if (cleanedUrl.startsWith("/")) {
                 const fullUrl = absURL + cleanedUrl; // Full URL for checking
 
-                const response = await axios.head(fullUrl, { validateStatus: null });
+                const response = await axios.head(fullUrl, {
+                    validateStatus: null
+                });
 
                 if (response.status === 404 || response.status === 403) {
                     brokenUrls.push(url);
@@ -222,7 +229,9 @@ async function testUrls(urls, document, configFile, filePath) {
             else {
                 const fullUrl = absURL + '/' + cleanedUrl; // Prepend '/' and then check the URL
 
-                const response = await axios.head(fullUrl, { validateStatus: null });
+                const response = await axios.head(fullUrl, {
+                    validateStatus: null
+                });
 
                 if (response.status === 404 || response.status === 403) {
                     brokenUrls.push(url);
@@ -278,8 +287,31 @@ async function testUrls(urls, document, configFile, filePath) {
             diagnosticCollection.set(document.uri, diagnostics);
         }
 
-        // Show the final result message
-        vscode.window.showInformationMessage(`Checked ${urls.length} URLs, found ${brokenUrls.length} broken and ${workingUrls.length} working.`);
+        // Show popup with URLs and their statuses
+        const workingResults = workingUrls.map(url => ({
+            label: `✅ ${url}`,
+            description: 'Working'
+        }));
+
+        const brokenResults = brokenUrls.map(url => ({
+            label: `❌ ${url}`,
+            description: 'Broken'
+        }));
+
+        const results = [...workingResults, ...brokenResults];
+
+        // Convert results array to a readable string
+        const resultsString = results.map(result => `${result.label} - ${result.description}`).join('\n');
+
+        const header = `Checked ${urls.length} URLs, found ${brokenUrls.length} broken and ${workingUrls.length} working.`;
+        const options = {
+            detail: resultsString,
+            modal: true
+        };
+
+        vscode.window.showInformationMessage(header, options, ...["Show results in Problems Tab"]).then(() => {
+            vscode.commands.executeCommand('workbench.action.problems.focus')
+        });
     }
 }
 
