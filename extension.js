@@ -162,96 +162,158 @@ function cleanUrl(url) {
     // Regular expression to match the URL and ignore anything after the first quote
     const urlRegex = /^([^\s]+)(?:\s+"[^"]*")?$/;
     const match = url.match(urlRegex);
-    return match ? match[1] : url;  // Return the cleaned URL
+    return match ? match[1] : url; // Return the cleaned URL
 }
 
 async function testUrls(urls, document, configFile, filePath) {
+
+    // Clear previous diagnostics to remove old highlights
     diagnosticCollection.clear(document.uri);
-    const loadingMessage = vscode.window.showInformationMessage('Checking URLs... Please wait.', { modal: false });
+
+    // Show a loading message
+    const loadingMessage = vscode.window.showInformationMessage('Checking URLs... Please wait.', {
+        modal: false
+    });
 
     const workingUrls = [];
     const brokenUrls = [];
+
+    // Array to hold all diagnostics
     const diagnostics = [];
+
+    // Retrieve the base URL (absURL) based on the config and file path
     const absURL = await findAbsURL(configFile, filePath);
 
+    // Function to process URLs with concurrency control
     const processUrl = async (url) => {
-        const cleanedUrl = cleanUrl(url);
+        const cleanedUrl = cleanUrl(url); // Clean the URL to remove any metadata (like "icon")
 
         try {
+            // Check if it's an external URL (starts with http:// or https://)
             if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
-                const response = await axios.head(cleanedUrl, { validateStatus: null });
+                const response = await axios.head(cleanedUrl, {
+                    validateStatus: null
+                });
 
                 if (response.status === 404 || response.status === 403) {
-                    brokenUrls.push({ url, status: `${response.status} Forbidden/Not Found` });
+                    brokenUrls.push(url);
                     diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Forbidden/Not Found`, cleanedUrl));
                 } else if (response.status >= 200 && response.status < 300) {
-                    workingUrls.push({ url, status: 'Working' });
+                    workingUrls.push(url);
                     diagnostics.push(await createWorkingUrlDiagnostic(url, document, cleanedUrl));
                 } else {
-                    brokenUrls.push({ url, status: `${response.status} Error` });
+                    brokenUrls.push(url);
                     diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Error`, cleanedUrl));
                 }
-            } else if (cleanedUrl.startsWith("/")) {
-                const fullUrl = absURL + cleanedUrl;
-                const response = await axios.head(fullUrl, { validateStatus: null });
+            }
+            // Check internal URLs (relative paths, starts with /)
+            else if (cleanedUrl.startsWith("/")) {
+                const fullUrl = absURL + cleanedUrl; // Full URL for checking
+
+                const response = await axios.head(fullUrl, {
+                    validateStatus: null
+                });
 
                 if (response.status === 404 || response.status === 403) {
-                    brokenUrls.push({ url, status: `${response.status} Forbidden/Not Found` });
+                    brokenUrls.push(url);
                     diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Forbidden/Not Found`, fullUrl));
                 } else if (response.status >= 200 && response.status < 300) {
-                    workingUrls.push({ url, status: 'Working' });
+                    workingUrls.push(url);
                     diagnostics.push(await createWorkingUrlDiagnostic(url, document, fullUrl));
                 } else {
-                    brokenUrls.push({ url, status: `${response.status} Error` });
+                    brokenUrls.push(url);
+                    diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Error`, fullUrl));
+                }
+            }
+            // Handle other cases like __tcproject__
+            else {
+                const fullUrl = absURL + '/' + cleanedUrl; // Prepend '/' and then check the URL
+
+                const response = await axios.head(fullUrl, {
+                    validateStatus: null
+                });
+
+                if (response.status === 404 || response.status === 403) {
+                    brokenUrls.push(url);
+                    diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Forbidden/Not Found`, fullUrl));
+                } else if (response.status >= 200 && response.status < 300) {
+                    workingUrls.push(url);
+                    diagnostics.push(await createWorkingUrlDiagnostic(url, document, fullUrl));
+                } else {
+                    brokenUrls.push(url);
                     diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Error`, fullUrl));
                 }
             }
         } catch (error) {
+            // Enhanced error handling
             let message = error.response ? `Status: ${error.response.status}` : `Error: ${error.message}`;
-            brokenUrls.push({ url, status: message });
+            console.error(`Error checking URL ${cleanedUrl}: ${message}`);
+
+            brokenUrls.push(url);
             diagnostics.push(await createBrokenUrlDiagnostic(url, document, message, absURL + cleanedUrl));
         }
     };
 
+    // Process URLs with concurrency control
     const processUrlsWithConcurrency = async (urls, concurrencyLimit) => {
         const promises = [];
         for (let i = 0; i < urls.length; i++) {
             const url = urls[i];
             const promise = processUrl(url).then(() => {
+                // Remove the promise from the array when it's done
                 promises.splice(promises.indexOf(promise), 1);
             });
             promises.push(promise);
+
+            // Wait if we have reached the concurrency limit
             if (promises.length >= concurrencyLimit) {
                 await Promise.race(promises);
             }
         }
+        // Wait for all remaining promises to complete
         await Promise.all(promises);
     };
 
     try {
         await processUrlsWithConcurrency(urls, CONCURRENCY_LIMIT);
     } finally {
-        loadingMessage.then(() => {});
+        // Dismiss the loading message
+        loadingMessage.then(() => {
+            // Loading message will automatically disappear after a few seconds
+        });
 
+        // Report all diagnostics at once
         if (diagnostics.length > 0) {
             diagnosticCollection.set(document.uri, diagnostics);
         }
 
         // Show popup with URLs and their statuses
-        const results = [...workingUrls, ...brokenUrls].map(result => ({
-            label: `${result.status === 'Working' ? '✅' : '❌'} ${result.url}`,
-            description: result.status
+        const workingResults = workingUrls.map(url => ({
+            label: `✅ ${url}`,
+            description: 'Working'
         }));
 
-        vscode.window.showQuickPick(results, {
-            placeHolder: 'Results of URL checks',
-            canPickMany: false
-        });
+        const brokenResults = brokenUrls.map(url => ({
+            label: `❌ ${url}`,
+            description: 'Broken'
+        }));
 
-        vscode.window.showInformationMessage(`Checked ${urls.length} URLs, found ${brokenUrls.length} broken and ${workingUrls.length} working.`);
+        const results = [...workingResults, ...brokenResults];
+
+        // Convert results array to a readable string
+        const resultsString = results.map(result => `${result.label} - ${result.description}`).join('\n');
+
+        const header = `Checked ${urls.length} URLs, found ${brokenUrls.length} broken and ${workingUrls.length} working.`;
+        const options = {
+            detail: resultsString,
+            modal: true
+        };
+
+        vscode.window.showInformationMessage(header, options, ...["Show results in Problems Tab"]).then(() => {
+            vscode.commands.executeCommand('workbench.action.problems.focus')
+        });
     }
 }
-
 
 async function createBrokenUrlDiagnostic(url, document, message, fullurl) {
     const range = findUrlRange(url, document);
