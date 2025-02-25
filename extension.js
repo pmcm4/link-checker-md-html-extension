@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs').promises;
+const cheerio = require('cheerio')
 const productFolderDictionary = require('./projectDict');
 
 const CONCURRENCY_LIMIT = 50; // Increased concurrency limit for better performance
@@ -87,17 +88,29 @@ async function findConfigFile(startDir) {
 function extractProductFolder(filePath) {
     const parts = filePath.split('/');
     const contentIndex = parts.indexOf('content');
+    let selfFragmentURL = []
+
+    for (let i = parts.length - 1; i > 0; i--) {
+        if (parts[i] === 'content') {
+            break
+        } else {
+            selfFragmentURL.unshift(parts[i].replace('.md', ''))
+        }
+    }
 
     if (contentIndex > 0) {
-        return parts[contentIndex - 1]; // Folder just before /content
+        return [parts[contentIndex - 1], selfFragmentURL.join("/")]; // Folder just before /content
     }
 
     return null; // Return null if the /content folder is not found
 }
 
+
 async function findAbsURL(configFilePath, filePath) {
     try {
-        const productFolder = extractProductFolder(filePath);
+        const extracts = extractProductFolder(filePath)
+        const productFolder = extracts[0];
+
         if (!productFolder) {
             throw new Error('Could not extract product folder from file path.');
         }
@@ -122,13 +135,14 @@ async function findAbsURL(configFilePath, filePath) {
         if (match === null) {
             return `https://docs.itrsgroup.com/${productName}`;
         }
-
-        const devVersion = await identifyVersion(match, productName);
+        
+        const isVersionInProd = await identifyVersion(match, productName);
+        
 
         if (match) {
             const versionNumber = match[2].replace(/_/g, '.');
 
-            if (devVersion) {
+            if (isVersionInProd === false) {
                 return `https://docs.itrsgroup.com/${productName}`;
             } else {
                 const removeCurrent = productName.replace("current", "");
@@ -143,19 +157,33 @@ async function findAbsURL(configFilePath, filePath) {
 }
 
 async function identifyVersion(match, productName) {
-    const versionNumber = match[2].replace(/_/g, '.');
-    const devVersion = axios.head(`https://devdocs.itrsgroup.com/${productName}`).then((response) => {
-        return response.request.res.responseUrl;
-    })
-    const devVersionNumber = await devVersion
 
-    const devVersionNumberExtract = String(devVersionNumber.match(/\d+\.\d+\.\d+/));
+        const configVersionNumber = match[2].replace(/_/g, '.');
 
-    if (versionNumber === devVersionNumberExtract) {
-        return true
-    } else {
-        return false
-    }
+        if (productName.includes('current')) { // check if product is versioned
+            const getProductName = productName.replace(/\/?(docs|current)\/?/g, '')
+            console.log(`https://docs.itrsgroup.com/${productName}`);
+            const result =  axios.get(`https://docs.itrsgroup.com/${productName}`).then((d)=>{
+                const $ = cheerio.load(String(d.data))
+                const productVP = $('.version-picker').data('product');
+                console.log(productVP);
+                axios.get(`https://docs.itrsgroup.com/versions/${productVP}.json`).then((response) => {
+                    return response.data.some((pv) => {
+                        const prodVersions = String(pv['path'].match(/\d+\.\d+\.\d+/));
+    
+                        if (prodVersions === configVersionNumber) {
+    
+                            return true;
+                        }
+                        return false;
+                    })
+                })
+            })
+            return result
+        } else {
+            return false // handle unversioned docs
+        }
+
 }
 
 function cleanUrl(url) {
@@ -209,6 +237,27 @@ async function testUrls(urls, document, configFile, filePath) {
             // Check internal URLs (relative paths, starts with /)
             else if (cleanedUrl.startsWith("/")) {
                 const fullUrl = absURL + cleanedUrl; // Full URL for checking
+
+                const response = await axios.head(fullUrl, {
+                    validateStatus: null
+                });
+
+                if (response.status === 404 || response.status === 403) {
+                    brokenUrls.push(url);
+                    diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Forbidden/Not Found`, fullUrl));
+                } else if (response.status >= 200 && response.status < 300) {
+                    workingUrls.push(url);
+                    diagnostics.push(await createWorkingUrlDiagnostic(url, document, fullUrl));
+                } else {
+                    brokenUrls.push(url);
+                    diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Error`, fullUrl));
+                }
+            }
+            // handle same page fragment urls starts with #
+            else if (cleanedUrl.startsWith("#")) {
+                const selfFragmentURLPage = extractProductFolder(filePath)[1]
+
+                const fullUrl = absURL + '/' + selfFragmentURLPage + '/' + cleanedUrl; // fragment url structure
 
                 const response = await axios.head(fullUrl, {
                     validateStatus: null
