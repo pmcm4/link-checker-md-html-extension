@@ -161,8 +161,6 @@ async function identifyVersion(match, productName) {
         const configVersionNumber = match[2].replace(/_/g, '.');
 
         if (productName.includes('current')) { // check if product is versioned
-            const getProductName = productName.replace(/\/?(docs|current)\/?/g, '')
-            
             const result =  axios.get(`https://docs.itrsgroup.com/${productName}`).then((d)=>{
                 const $ = cheerio.load(String(d.data))
                 const productVP = $('.version-picker').data('product');
