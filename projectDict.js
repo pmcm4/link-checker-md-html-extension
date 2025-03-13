@@ -16,7 +16,7 @@ const productFolderDictionary = {
     'geneos-docs': 'docs/geneos/current',
     'geneos-azure-monitor-docs': 'docs/geneos/collection/azure-monitor/current',
     'global-docs': 'docs/all',
-    'gateway-hub-docs': '/geneos-gateway-hub/current',
+    'gateway-hub-docs': 'docs/geneos-gateway-hub/current',
     'infrastructure-agent-docs': 'docs/infrastructure-agent/current',
     'obcerv-app-alerting-docs': 'docs/itrs-analytics/app/alerting/current',
     'obcerv-app-api-gateway-docs': 'docs/itrs-analytics/app/api-gateway/current',

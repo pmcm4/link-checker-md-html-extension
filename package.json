@@ -1,43 +1,43 @@
 {
-  "name": "link-checker-md-html-linter",
-  "displayName": "Link checker - HTML & Markdown",
-  "description": "",
-  "version": "1.0.0",
-  "publisher": "pmcm-dev",
-  "homepage": "https://github.com/pmcm4/link-checker-md-html-extension/blob/main/README.md",
-  "engines": {
-    "vscode": "^1.96.0"
-  },
-  "categories": [
-    "Linters", "Other"
-  ],
-  "activationEvents": [],
-  "main": "./extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "link-checker-md-html-linter.checkUrls",
-        "title": "Check URLs"
-      }
-    ]
-  },
-  "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "vscode-test"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.96.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
-    "eslint": "^9.19.0"
-  },
-  "dependencies": {
-    "axios": "^1.7.9",
-    "cheerio": "^1.0.0",
-    "node-fetch": "^3.3.2",
-    "toml": "^3.0.0"
+    "name": "link-checker-md-html-linter",
+    "displayName": "Link checker - HTML & Markdown",
+    "description": "",
+    "version": "1.0.1",
+    "publisher": "pmcm-dev",
+    "homepage": "https://github.com/pmcm4/link-checker-md-html-extension/blob/main/README.md",
+    "engines": {
+      "vscode": "^1.96.0"
+    },
+    "categories": [
+      "Linters", "Other"
+    ],
+    "activationEvents": [],
+    "main": "./extension.js",
+    "contributes": {
+      "commands": [
+        {
+          "command": "link-checker-md-html-linter.checkUrls",
+          "title": "Check URLs"
+        }
+      ]
+    },
+    "scripts": {
+      "lint": "eslint .",
+      "pretest": "npm run lint",
+      "test": "vscode-test"
+    },
+    "devDependencies": {
+      "@types/mocha": "^10.0.10",
+      "@types/node": "20.x",
+      "@types/vscode": "^1.96.0",
+      "@vscode/test-cli": "^0.0.10",
+      "@vscode/test-electron": "^2.4.1",
+      "eslint": "^9.19.0"
+    },
+    "dependencies": {
+      "axios": "^1.7.9",
+      "cheerio": "^1.0.0",
+      "node-fetch": "^3.3.2",
+      "toml": "^3.0.0"
+    }
   }
-}
