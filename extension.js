@@ -138,6 +138,7 @@ async function findAbsURL(configFilePath, filePath) {
         
         const isVersionInProd = await identifyVersion(match, productName);
         
+        
 
         if (match) {
             const versionNumber = match[2].replace(/_/g, '.');
@@ -157,31 +158,30 @@ async function findAbsURL(configFilePath, filePath) {
 }
 
 async function identifyVersion(match, productName) {
+    const configVersionNumber = match[2].replace(/_/g, '.');
 
-        const configVersionNumber = match[2].replace(/_/g, '.');
+    if (productName.includes('current')) {
+        try {
+            // First request: Get the product version
+            const initialResponse = await axios.get(`https://docs.itrsgroup.com/${productName}`);
+            const $ = cheerio.load(String(initialResponse.data));
+            const productVP = $('.version-picker').data('product');
 
-        if (productName.includes('current')) { // check if product is versioned
-            const result =  axios.get(`https://docs.itrsgroup.com/${productName}`).then((d)=>{
-                const $ = cheerio.load(String(d.data))
-                const productVP = $('.version-picker').data('product');
-                
-                axios.get(`https://docs.itrsgroup.com/versions/${productVP}.json`).then((response) => {
-                    return response.data.some((pv) => {
-                        const prodVersions = String(pv['path'].match(/\d+\.\d+\.\d+/));
-    
-                        if (prodVersions === configVersionNumber) {
-    
-                            return true;
-                        }
-                        return false;
-                    })
-                })
-            })
-            return result
-        } else {
-            return false // handle unversioned docs
+            // Second request: Check if the version exists
+            const versionResponse = await axios.get(`https://docs.itrsgroup.com/versions/${productVP}.json`);
+            
+            // Check if any version matches
+            return versionResponse.data.some((pv) => {
+                const prodVersions = String(pv['path'].match(/\d+\.\d+\.\d+/));
+                return prodVersions === configVersionNumber;
+            });
+        } catch (error) {
+            console.error('Error checking version:', error);
+            return false; // Fallback if request fails
         }
-
+    } else {
+        return false; // Unversioned docs
+    }
 }
 
 function cleanUrl(url) {
