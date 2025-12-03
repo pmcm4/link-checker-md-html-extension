@@ -35,16 +35,22 @@ function activate(context) {
 
         console.time('URL Extraction');
         // Regex to capture HTML and Markdown links
+        // Updated regex to handle attributes with or without alt text, and various quote styles
         const urlRegex = /(?:href|src|action|data|poster|cite|profile|background|ping|formaction)\s*=\s*["']([^"']+)["']/g; // HTML
         const markdownRegex = /\[([^\]]+)\]\(([^)]+)\)/g; // Markdown
         const normalUrlRegex = /\bhttps?:\/\/[^\s"')<>]+/g; // Plain URLs
+        
+        // Additional regex to catch img src attributes that might be missed (handles various HTML structures)
+        const imgSrcRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi; // Explicit img tag matching
 
         const htmlUrls = Array.from(text.matchAll(urlRegex), match => match[1]);
         const markdownUrls = Array.from(text.matchAll(markdownRegex), match => match[2]);
         const normalUrls = Array.from(text.matchAll(normalUrlRegex), match => match[0]);
+        const imgUrls = Array.from(text.matchAll(imgSrcRegex), match => match[1]);
 
-        // Combine all found URLs
-        const urls = [...htmlUrls, ...markdownUrls, ...normalUrls];
+        // Combine all found URLs and remove duplicates
+        const allUrls = [...htmlUrls, ...markdownUrls, ...normalUrls, ...imgUrls];
+        const urls = [...new Set(allUrls)]; // Remove duplicates
 
 
         console.timeEnd('URL Extraction');
