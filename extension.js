@@ -37,12 +37,15 @@ function activate(context) {
         // Regex to capture HTML and Markdown links
         const urlRegex = /(?:href|src|action|data|poster|cite|profile|background|ping|formaction)\s*=\s*["']([^"']+)["']/g; // HTML
         const markdownRegex = /\[([^\]]+)\]\(([^)]+)\)/g; // Markdown
+        const normalUrlRegex = /\bhttps?:\/\/[^\s"')<>]+/g; // Plain URLs
 
         const htmlUrls = Array.from(text.matchAll(urlRegex), match => match[1]);
         const markdownUrls = Array.from(text.matchAll(markdownRegex), match => match[2]);
+        const normalUrls = Array.from(text.matchAll(normalUrlRegex), match => match[0]);
 
-        // Combine both HTML and markdown URLs
-        const urls = [...htmlUrls, ...markdownUrls];
+        // Combine all found URLs
+        const urls = [...htmlUrls, ...markdownUrls, ...normalUrls];
+
 
         console.timeEnd('URL Extraction');
 
@@ -213,14 +216,13 @@ async function testUrls(urls, document, configFile, filePath) {
     // Function to process URLs with concurrency control
     const processUrl = async (url) => {
         const cleanedUrl = cleanUrl(url); // Clean the URL to remove any metadata (like "icon")
-
+        
         try {
             // Check if it's an external URL (starts with http:// or https://)
             if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
                 const response = await axios.head(cleanedUrl, {
                     validateStatus: null
                 });
-
                 if (response.status === 404 || response.status === 403) {
                     brokenUrls.push(url);
                     diagnostics.push(await createBrokenUrlDiagnostic(url, document, `${response.status} Forbidden/Not Found`, cleanedUrl));
@@ -295,7 +297,7 @@ async function testUrls(urls, document, configFile, filePath) {
             // Enhanced error handling
             let message = error.response ? `Status: ${error.response.status}` : `Error: ${error.message}`;
             console.error(`Error checking URL ${cleanedUrl}: ${message}`);
-
+            console.log(url);
             brokenUrls.push(url);
             diagnostics.push(await createBrokenUrlDiagnostic(url, document, message, absURL + cleanedUrl));
         }
@@ -304,6 +306,7 @@ async function testUrls(urls, document, configFile, filePath) {
     // Process URLs with concurrency control
     const processUrlsWithConcurrency = async (urls, concurrencyLimit) => {
         const promises = [];
+        
         for (let i = 0; i < urls.length; i++) {
             const url = urls[i];
             const promise = processUrl(url).then(() => {
